@@ -1,6 +1,15 @@
 const { constants } = require("./constants");
 
 const errorHandler = (err, req, res, next) => {
+    // Log error untuk debugging di Vercel
+    console.error('Error Handler:', {
+        name: err.name,
+        message: err.message,
+        code: err.code,
+        path: req.path,
+        method: req.method
+    });
+
     let statusCode = res.statusCode && res.statusCode >= 400 ? res.statusCode : 500;
     
     let message = err.message;
@@ -25,6 +34,13 @@ const errorHandler = (err, req, res, next) => {
         title = "Duplicate Key Error";
     }
 
+    // Database connection error
+    if (err.message && err.message.includes('Database connection failed')) {
+        statusCode = 503;
+        title = "Service Unavailable";
+        message = "Database connection is currently unavailable. Please try again later.";
+    }
+
     switch (statusCode) {
         case constants.VALIDATION_ERROR:
             title = "Validation Failed";
@@ -39,6 +55,7 @@ const errorHandler = (err, req, res, next) => {
             title = "Not Found";
             break;
     }
+    
     res.status(statusCode).json({
         title: title,
         message: message,
